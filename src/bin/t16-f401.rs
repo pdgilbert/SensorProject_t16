@@ -1,3 +1,5 @@
+//  UPDATE THIS FOR SETUP, ETC AS IN TH8
+//
 //  based on projects/temperature-display_no-rtic.rs
 //! Measure temperature on sixteen temperature sensors (NTC 3950 10k thermistors probes) 
 //! using  4-channel adc's on I2C1 and crate ads1x1x. Display using SSD1306 on I2C2.
@@ -30,7 +32,7 @@ const MONITOR_IDU : &[u8] = MONITOR_ID.as_bytes();
 
 
 const MODULE_CODE:  &str = "t16-f401"; 
-const READ_INTERVAL:  u32 = 300;  // used as seconds  but 
+const READ_INTERVAL:  u32 = 15;  // used as seconds  but 
 const BLINK_DURATION: u32 = 1;  // used as seconds  but  ms would be better
 const S_FMT:       usize  = 12;
 const MESSAGE_LEN: usize  = 16 * S_FMT;  
@@ -62,7 +64,7 @@ use stm32f4xx_hal::{
     block,
     timer::{TimerExt},
     gpio::{Pin}, 
-    gpio::{gpioa::{PA0, PA4, }},
+    gpio::{gpioa::{PA1, PA4, }},
     gpio::{gpiob::{PB4, PB5, }},  
     gpio::{gpioc::{PC13}},
 };
@@ -132,7 +134,7 @@ impl LED for  PC13<Output<PushPull>> {}
 struct SpiExt {  cs:    PA4<Output<PushPull>>, 
                  busy:  PB4<Input<>>, 
                  ready: PB5<Input<>>, 
-                 reset: PA0<Output<PushPull>>
+                 reset: PA1<Output<PushPull>>
 }
 
 const MODE: Mode = Mode {
@@ -248,7 +250,8 @@ const  SCALE: i64 = 8 ;  // = 32767 / 4096
      }
 
 
-    type LoraType = Sx127x<Base<Spi<SPI1>, Pin<'A', 4, Output>, Pin<'B', 4>, Pin<'B', 5>, Pin<'A', 0, Output>, halDelay<TIM5, 1000000>>>;
+    //type LoraType = Sx127x<Base<Spi<SPI1>, Pin<'A', 4, Output>, Pin<'B', 4>, Pin<'B', 5>, Pin<'A', 0, Output>, halDelay<TIM5, 1000000>>>;
+    type LoraType = Sx127x<Base<Spi<SPI1>, Pin<'A', 4, Output>, Pin<'B', 4>, Pin<'B', 5>, Pin<'A', 1, Output>, halDelay<TIM5, 1000000>>>;
 
     fn send(
             lora: &mut LoraType,
@@ -329,7 +332,7 @@ fn main() -> ! {
         cs:    gpioa.pa4.into_push_pull_output(), //CsPin         
         busy:  gpiob.pb4.into_floating_input(),   //BusyPin  DI00 
         ready: gpiob.pb5.into_floating_input(),   //ReadyPin DI01 
-        reset: gpioa.pa0.into_push_pull_output(), //ResetPin   
+        reset: gpioa.pa1.into_push_pull_output(), //ResetPin   
         };   
 
 
