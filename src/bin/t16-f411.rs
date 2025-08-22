@@ -1,8 +1,6 @@
-//  UPDATE THIS FOR SETUP, ETC AS IN TH8
-//
-//  based on projects/temperature-display_no-rtic.rs
+//  based on crate rust-integration-testing  examples/projects/temperature-display_no-rtic.rs
 //! Measure temperature on sixteen temperature sensors (NTC 3950 10k thermistors probes) 
-//! using  4-channel adc's on I2C1 and crate ads1x1x. Display using SSD1306 on I2C2.
+//! using  4-channel adc's on I2C2 and crate ads1x1x. Display using SSD1306 on I2C1.
 //! Transmit with LoRa on SPI.
 
 //! Status: Compiles and runs, Nov 21,2024. Prototype PCB hardware needs adjustments.
@@ -31,8 +29,8 @@ const MONITOR_IDU : &[u8] = MONITOR_ID.as_bytes();
 //const MONITOR_ID:  [u8;3] = *b"T02";  //dereferenced byte string literal   // module id to indicate source of transmition
 
 
-const MODULE_CODE:  &str = "t16-f401"; 
-const READ_INTERVAL:  u32 = 15;  // used as seconds  but 
+const MODULE_CODE:  &str = "t16-f411"; 
+const READ_INTERVAL:  u32 = 600;  // used as seconds  but 
 const BLINK_DURATION: u32 = 1;  // used as seconds  but  ms would be better
 const S_FMT:       usize  = 12;
 const MESSAGE_LEN: usize  = 16 * S_FMT;  
@@ -48,13 +46,13 @@ use panic_halt as _;
 
 //use cortex_m_semihosting::{debug, hprintln};
 //use cortex_m_semihosting::{hprintln};
-use cortex_m::asm; // for delay
+//use cortex_m::asm; // for delay
 use cortex_m_rt::entry;
 
 use core::fmt::Write;
 
 use stm32f4xx_hal::{
-    pac::{Peripherals, I2C2, SPI1, TIM5},
+    pac::{Peripherals, I2C1, SPI1, TIM5},
     timer::{Delay as halDelay},
     rcc::{RccExt},
     spi::{Spi},
@@ -86,19 +84,19 @@ use embedded_graphics::{
     text::{Baseline, Text},
 };
 
-type  DisplaySize = ssd1306::prelude::DisplaySize128x64;
-type  DisplayType = Ssd1306<I2CInterface<I2c<I2C2>>, DisplaySize, BufferedGraphicsMode<DisplaySize>>;
-
 //common display sizes are 128x64 and 128x32
-const DISPLAYSIZE: DisplaySize = DisplaySize128x64;
+type  DisplaySizeType = ssd1306::prelude::DisplaySize128x64;
+const DISPLAYSIZE: DisplaySizeType = DisplaySize128x64;
+type  DisplayType = Ssd1306<I2CInterface<I2c<I2C1>>, DisplaySizeType, BufferedGraphicsMode<DisplaySizeType>>;
+
 
 use ssd1306::{mode::BufferedGraphicsMode, prelude::*, I2CDisplayInterface, Ssd1306};
 
 
 /////////////////////  lora
 
-use t16_f401::lora::Base;
-use t16_f401::lora::{CONFIG_RADIO};
+use t16_f411::lora::Base;
+use t16_f411::lora::{CONFIG_RADIO};
 
 use radio_sx127x::{
     Transmit,  // trait needs to be in scope to find  methods start_transmit and check_transmit.
@@ -193,9 +191,9 @@ const  SCALE: i64 = 8 ;  // = 32767 / 4096
 
    // CHECK SIGN IS CORRECT FOR -0.3 C
    // NEED TO DISPLAY THE REST
-      // hprintln!(" t {:?} = 10 * degrees", t).unwrap();
+      // hprintln!(" t {:?} = 10 * degrees", t);
 
-       show_message(&line, disp);
+      show_message(&line, disp);
        ()
      };
     }
@@ -238,9 +236,9 @@ const  SCALE: i64 = 8 ;  // = 32767 / 4096
         // t is long enough for 16 sensors - J1 to J16 on a module
         for i in 0..t.len() {
                 temp.clear();
-                //hprintln!(" J{}:{:3}.{:1}",      i+1, t[i]/10, t[i].abs() %10).unwrap(); // t[0] is for J1
+                //hprintln!(" J{}:{:3}.{:1}",      i+1, t[i]/10, t[i].abs() %10); // t[0] is for J1
                 write!(temp,  " J{}:{:3}.{:1}",  i+1, t[i]/10, t[i].abs() %10).unwrap(); // must not exceed S_FMT
-                //hprintln!("temp {:?}  temp.len {}", temp, temp.len()).unwrap();
+                //hprintln!("temp {:?}  temp.len {}", temp, temp.len());
                 for j in 0..temp.len() {line.push(temp[j]).unwrap()};
         };
 
@@ -261,30 +259,30 @@ const  SCALE: i64 = 8 ;  // = 32767 / 4096
         
         match lora.start_transmit(&m) {
             Ok(_b)   => {//show_message("start_transmit ok", disp);
-                         //hprintln!("lora.start ok").unwrap()
+                         //hprintln!("lora.start ok")
                         } 
-            Err(_e)  => {show_message("start_transmit error", disp);
-                         //hprintln!("Error in lora.start_transmit()").unwrap()
+            Err(_e)  => {//show_message("start_transmit error", disp);
+                         //hprintln!("Error in lora.start_transmit()")
                         }
         };
 
         lora.delay_ms(10); // treated as seconds. Without some delay next returns bad. (interrupt may also be an option)
 
         match lora.check_transmit() {
-            Ok(b)   => {if b {show_message("TX good", disp);
-                              //hprintln!("TX good").unwrap(); 
+            Ok(b)   => {if b {//show_message("TX good", disp);
+                              //hprintln!("TX good"); 
                              }
                         else {show_message("TX bad", disp);
-                              //hprintln!("TX bad").unwrap()
+                              //hprintln!("TX bad")
                              }
                        }
-            Err(_e) => {show_message("check_transmit Fail", disp);
-                        //hprintln!("check_transmit() Error. Should return True or False.").unwrap()
+            Err(_e) => {//show_message("check_transmit Fail", disp);
+                        //hprintln!("check_transmit() Error. Should return True or False."))
                        }
         };
         lora.delay_ms(3);
 
-        show_message(&MONITOR_ID, disp);
+      show_message(&MONITOR_ID, disp);
        ()
     }
 
@@ -293,50 +291,46 @@ const  SCALE: i64 = 8 ;  // = 32767 / 4096
 #[entry]
 fn main() -> ! {
 
-   //hprintln!("t8-th4-f401").unwrap();
+    //hprintln!("t16-f411");
 
-   let dp = Peripherals::take().unwrap();
-   let rcc = dp.RCC.constrain();
-   let clocks = rcc.cfgr.freeze();
+    let dp = Peripherals::take().unwrap();
+    let mut rcc = dp.RCC.constrain();
+    
+    let gpioa = dp.GPIOA.split(&mut rcc);
+    let gpiob = dp.GPIOB.split(&mut rcc);
+    let gpioc = dp.GPIOC.split(&mut rcc);
 
-   // according to  https://github.com/rtic-rs/rtic/blob/master/examples/stm32f411_rtc_interrupt/src/main.rs
-   // 25 MHz must be used for HSE on the Blackpill-STM32F411CE board according to manual
-   // let clocks = rcc.cfgr.use_hse(25.MHz()).freeze();
-   
-   let gpioa = dp.GPIOA.split();
-   let gpiob = dp.GPIOB.split();
-   let gpioc   = dp.GPIOC.split();
+    //v020_2025-05 has wiring error:  (scl, sda) on (pb8, pb6) UFQFPN48 pins (45, 42)
+    let scl = gpiob.pb8.into_alternate_open_drain(); 
+    let sda = gpiob.pb9.into_alternate_open_drain(); // not pb6, should be pb7 or pb9 on pins 43 or 46
+    let i2c1 = I2c::new(dp.I2C1, (scl, sda), 400.kHz(), &mut rcc);
 
-   let scl = gpiob.pb8.into_alternate_open_drain(); 
-   let sda = gpiob.pb9.into_alternate_open_drain(); 
-   let i2c1 = I2c::new(dp.I2C1, (scl, sda), 400.kHz(), &clocks);
+    let scl = gpiob.pb10.into_alternate_open_drain();
+    let sda = gpiob.pb3.into_alternate_open_drain();
+    let i2c2 = I2c::new(dp.I2C2, (scl, sda), 400.kHz(), &mut rcc);
 
-   let scl = gpiob.pb10.into_alternate_open_drain();
-   let sda = gpiob.pb3.into_alternate_open_drain();
-   let i2c2 = I2c::new(dp.I2C2, (scl, sda), 400.kHz(), &clocks);
+    let mut led = gpioc.pc13.into_push_pull_output();
+    led.off();
 
-   let mut led = gpioc.pc13.into_push_pull_output();
-   led.off();
-
-   let spi = Spi::new(
-       dp.SPI1,
-       (
-           gpioa.pa5.into_alternate(), // sck  
-           gpioa.pa6.into_alternate(), // miso 
-           gpioa.pa7.into_alternate(), // mosi 
-       ),
-       MODE, 8.MHz(), &clocks,
-   );
-   
-   let spiext = SpiExt {
-        cs:    gpioa.pa4.into_push_pull_output(), //CsPin         
-        busy:  gpiob.pb4.into_floating_input(),   //BusyPin  DI00 
-        ready: gpiob.pb5.into_floating_input(),   //ReadyPin DI01 
-        reset: gpioa.pa1.into_push_pull_output(), //ResetPin   
-        };   
+    let spi = Spi::new(
+        dp.SPI1,
+        (
+            Some(gpioa.pa5.into_alternate()), // sck  
+            Some(gpioa.pa6.into_alternate()), // miso 
+            Some(gpioa.pa7.into_alternate()), // mosi 
+        ),
+        MODE, 8.MHz(), &mut rcc,
+    );
+    
+    let spiext = SpiExt {
+         cs:    gpioa.pa4.into_push_pull_output(), //CsPin         
+         busy:  gpiob.pb4.into_floating_input(),   //BusyPin  DI00 
+         ready: gpiob.pb5.into_floating_input(),   //ReadyPin DI01 
+         reset: gpioa.pa1.into_push_pull_output(), //ResetPin   
+         };   
 
 
-   let mut delay = dp.TIM5.delay(&clocks);
+    let mut delay = dp.TIM5.delay(&mut rcc);
 
     led.off();
     delay.delay_ms(2000); // treated as ms
@@ -347,19 +341,31 @@ fn main() -> ! {
 
     /////////////////////   ssd
 
-    let interface = I2CDisplayInterface::new(i2c2); //default address 0x3C
+    let interface = I2CDisplayInterface::new(i2c1); // ssd on I2C1 with default address 0x3C
 
-    let mut z = Ssd1306::new(interface, DISPLAYSIZE, DisplayRotation::Rotate0);
+    let mut z = Ssd1306::new(interface, DISPLAYSIZE, DisplayRotation::Rotate0).into_buffered_graphics_mode();
 
+    //hprintln!("display initializing.");
+
+    // disp is Optional because ssd screen may not be plugged in. It is set None if init fails.
+    // If it is None then messages displays are skipped.
+    // It will be None for  v020_2025-05 because  I2C1 for ssd is improperly wired.
+
+    #[cfg(feature = "v020_2025-05")]
+    let mut disp: Option<DisplayType> = None;
+
+    #[cfg(not(feature = "v020_2025-05"))]
     let mut disp: Option<DisplayType> = match z.init() {
-        Ok(_d)  => {Some(z.into_buffered_graphics_mode())} 
-        Err(_e) => {None}
+        Ok(_d)  => {Some(z)
+                   },
+        Err(e)  => {hprintln!("display set None. {:?}", e);
+                    None
+                   }
     };
-
+    
     show_message(MODULE_CODE, &mut disp);
-
     delay.delay_ms(2000); // treated as ms
-    //hprintln!("display initialized.").unwrap();
+    //hprintln!("display init done.");
 
      
     /////////////////////   adc
@@ -367,14 +373,14 @@ fn main() -> ! {
     // ADS11x5 chips allows four different I2C addresses using one address pin ADDR. 
     // Connect ADDR pin to GND for 0x48(1001000) , to VCC for 0x49. to SDA for 0x4A, and to SCL for 0x4B.
 
-    let i2c_ref_cell = RefCell::new(i2c1);
+    let i2c_ref_cell = RefCell::new(i2c2); //  adc on I2C2
 
     let mut adc_a = Ads1x1x::new_ads1115(i2c::RefCellDevice::new(&i2c_ref_cell),  TargetAddr::Gnd);
     let mut adc_b = Ads1x1x::new_ads1115(i2c::RefCellDevice::new(&i2c_ref_cell),  TargetAddr::Vdd);
     let mut adc_c = Ads1x1x::new_ads1115(i2c::RefCellDevice::new(&i2c_ref_cell),  TargetAddr::Sda);
     let mut adc_d = Ads1x1x::new_ads1115(i2c::RefCellDevice::new(&i2c_ref_cell),  TargetAddr::Scl);
 
-    //hprintln!("adc initialized.").unwrap();
+    //hprintln!("adc initialized.");
     show_message("adc initialized.", &mut disp);
 
     // set FullScaleRange to measure expected max voltage.
@@ -387,7 +393,7 @@ fn main() -> ! {
         Ok(())  =>  (),
         Err(_e)  =>  {show_message("range error.", &mut disp);
                      delay.delay_ms(2000u32);
-                     //hprintln!("Error {:?} in adc_a.set_full_scale_range(). Check i2c is on proper pins.", e).unwrap(); 
+                     //hprintln!("Error {:?} in adc_a.set_full_scale_range(). Check i2c is on proper pins.", e); 
                      //panic!("panic")
                     },
     };
@@ -396,7 +402,7 @@ fn main() -> ! {
         Ok(())  =>  (),
         Err(_e)  =>  {show_message("range error.", &mut disp);
                      delay.delay_ms(2000u32);
-                     //hprintln!("Error {:?} in adc_b.set_full_scale_range(). Check i2c is on proper pins.", e).unwrap(); 
+                     //hprintln!("Error {:?} in adc_b.set_full_scale_range(). Check i2c is on proper pins.", e); 
                      //panic!("panic")
                     },
     };
@@ -405,7 +411,7 @@ fn main() -> ! {
         Ok(())  =>  (),
         Err(_e)  =>  {show_message("range error.", &mut disp);
                      delay.delay_ms(2000u32);
-                     //hprintln!("Error {:?} in adc_c.set_full_scale_range(). Check i2c is on proper pins.", e).unwrap(); 
+                     //hprintln!("Error {:?} in adc_c.set_full_scale_range(). Check i2c is on proper pins.", e); 
                      //panic!("panic")
                     },
     };
@@ -414,10 +420,11 @@ fn main() -> ! {
         Ok(())  =>  (),
         Err(_e)  =>  {show_message("range error.", &mut disp);
                      delay.delay_ms(2000u32);
-                     //hprintln!("Error {:?} in adc_d.set_full_scale_range(). Check i2c is on proper pins.", e).unwrap(); 
+                     //hprintln!("Error {:?} in adc_d.set_full_scale_range(). Check i2c is on proper pins.", e); 
                      //panic!("panic")
                     },
     };
+    //hprintln!("set_full_scale_range done.");
 
     /////////////////////   lora
 
@@ -427,12 +434,12 @@ fn main() -> ! {
 
     let mut lora =  match z {
         Ok(lr)  => {show_message("lora setup ok", &mut disp);
-                    //hprintln!("lora setup completed.").unwrap();
+                    //hprintln!("lora setup completed.");
                     lr
                    } 
         Err(e)  => {show_message("lora setup Error", &mut disp);
-                    //hprintln!("Error in lora setup. {:?}", e).unwrap();
-                    asm::bkpt();
+                    //hprintln!("Error in lora setup. {:?}", e);
+                    //asm::bkpt();
                     panic!("{:?}", e) 
                    }
     };
@@ -450,7 +457,7 @@ fn main() -> ! {
    // t = a + v/b , v in mV, b inverse slope
    let a = 72i64;    //  72 deg
    let b = -34i64;   //  -34 mv/degree   
-   // hprintln!("a {:?}  b {:?}   SCALE {:?}", a,b, SCALE).unwrap();
+   //hprintln!("a {:?}  b {:?}   SCALE {:?}", a,b, SCALE);
 
    loop { 
       // blink
@@ -498,13 +505,13 @@ fn main() -> ! {
 
       //If the mv value is over 3000 (temperature < about -19.0 C ) then the thermistor is probably missing.
       
-      //hprintln!(" mv{:?} = values_a mv ", values_a).unwrap();
-      //hprintln!(" mv{:?} =      mv     ", mv).unwrap();
+      //hprintln!(" mv{:?} = values_a mv ", values_a);
+      //hprintln!(" mv{:?} =      mv     ", mv);
 
       //show_display(mv, &mut disp);
 
  //     for i in 0..mv.len() { mv[i] = v[i] as i64 / SCALE};  
- //     //hprintln!(" mv {:?}", mv).unwrap();
+ //     //hprintln!(" mv {:?}", mv);
 
       // t in tenths of a degrees C, so it is an int  but t[0]/10, t[0].abs() %10 give a degree with one decimal.
       let mut t:[i64; 16] = [-100; 16] ;
@@ -512,13 +519,13 @@ fn main() -> ! {
       //for i in 0..t.len() { t[i] = 10 * (a + mv[i] / b) }; // loses the decimal rounding division
       for i in 0..t.len() { t[i] =  10 * a  + (10 * mv[i]) / b };
  
-      //hprintln!(" t {:?} = 10 * degrees", t).unwrap();
+      //hprintln!(" t {:?} = 10 * degrees", t);
       
       let message = form_temp(t);
-      //hprintln!("message {:?}", message).unwrap();
+      //hprintln!("message {:?}", message);
 
       show_display(t, &mut disp);
-      send(&mut lora,message, &mut disp);
+      send(&mut lora, message, &mut disp);
 
       //delay.delay_ms(READ_INTERVAL);// treated as ms
       lora.delay_ms(READ_INTERVAL);  // treated as seconds

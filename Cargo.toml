@@ -1,14 +1,11 @@
-
-#cargo build --no-default-features --target thumbv7em-none-eabihf --features stm32f401 
-
 [package]
 authors = ["Paul Gilbert"]
 categories = ["embedded", "no-std"]
 description = "module with 16 NTC temperature, and MCU stm32f401"
-keywords = ["stm32f401", "i2c", "spi", "adc"]
+keywords = ["stm32f411", "i2c", "spi", "adc", "lora"]
 license = "MIT OR Apache-2.0"
-name = "t16-f401"
-version = "0.0.1"
+name = "t16-f411"
+version = "0.0.2"
 edition = "2021"
 
 [dependencies]
@@ -17,11 +14,12 @@ cortex-m-semihosting   = ">=0.5.0"
                                        
 #stm32f4xx-hal =  { version = "0.20.0" } ok
 #stm32f4xx-hal =  { version = "0.21.0" } ok
-stm32f4xx-hal =  { version = "0.22.1" }  
+#stm32f4xx-hal =  { version = "0.22.1" }  
+stm32f4xx-hal = { git = "https://github.com/stm32-rs/stm32f4xx-hal", optional = true }
 
 
 embedded-hal        = "1.0"
-embedded-hal-bus    = "0.2.0"
+embedded-hal-bus    = "0.3.0"
 
 nb = ">=1.1.0"
 libm = "0.2"
@@ -31,17 +29,17 @@ cortex-m-rt = ">=0.7.0"
 panic-semihosting    = { version = ">=0.5.2" }
 panic-halt           = { version = ">=0.2.0" }
 
-heapless = "0.7"
+heapless = "0.8"
 embedded-graphics = ">=0.7"
 
 # This radio-sx127 re-exports {Receive, Transmit} so insures correct radio version.
 radio-sx127x  = {  git = "https://github.com/pdgilbert/rust-radio-sx127x", default-features = false, branch = "ehal-1" }
 
-#ssd1306         = { git = "https://github.com/sjoerdsimons/ssd1306", branch = "master"  } # embedded-hal-1.0.0
-ssd1306         = { version = "0.9.0" } 
+ssd1306         = { version = "0.10.0" } 
 
 ads1x1x         = { git = "https://github.com/eldruin/ads1x1x-rs" }
 #ads1x1x         = { version = "0.2.2" }  # trait bound problems
 
 [features]
-stm32f401 = ["stm32f4xx-hal/stm32f401"  ] 
+#stm32f411 = ["stm32f4xx-hal/stm32f411"  ] 
+v020_2025-05 = ["stm32f4xx-hal/stm32f411"  ] 

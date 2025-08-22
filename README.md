@@ -15,18 +15,22 @@ The measurements are transmitted by LoRa and optionally displayed on an SSD1306.
 The code here is based on code in 
 https://github.com/pdgilbert/rust-integration-testing/tree/main/examples/projects.
 Relative to that repository, this crate is much simplified by targetting specific hardware
-and a specific MCU (stm32f401). 
+versions, which have a specific MCU and peripheral setup. 
 The intention is that code here should be stable and remain working for the hardware.
 The code in repository `rust-integration-testing` is intended for testing new versions of 
 crates and hals, and as a result is sometimes broken.
 
+The main code is in ```src/bin```.
+Examples in this crate are intended for testing the hardware and do not (yet) demonstate the use of the crate.
+
 ## Building
 
 ```
-MONITOR_ID="whatever"  cargo build --no-default-features  --target thumbv7em-none-eabihf --features stm32f401   --bin t16-f401   [ --release ]
+MONITOR_ID="whatever"  cargo build --no-default-features  --target thumbv7em-none-eabihf --features v020_2025-05   --bin t16-f411   [ --release ]
 ```
+The feature ```v020_2025-05``` indicate prototype hardware version `v0.2.0 2025-05`.
 MONITOR_ID is optional. If not supplied "Txxx" will be used. 
-The hal stm32f4xx_hal is used and set as a dependency in Cargo.toml.
+The hal ```stm32f4xx_hal``` is used and set as a dependency in Cargo.toml.
 
 ## Loading
 
@@ -40,9 +44,15 @@ Adjust interface for your programming dongle.
 
 In another window do
 ```
-MONITOR_ID="whatever"  cargo  run --target thumbv7em-none-eabihf --features stm32f401  [ --release]
+MONITOR_ID="whatever"  cargo  run --target thumbv7em-none-eabihf --features v020_2025-05 --bin t16-f411  [ --release]
 ```
 The `--release` will be needed if code is too big for memory.
+
+## Testing
+```
+cargo  run --target thumbv7em-none-eabihf --features v020_2025-05 --example blink_impl
+```
+
 
 ## License
 
