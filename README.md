@@ -1,4 +1,4 @@
-STATUS: Software compiles and runs, Nov 21,2024. Prototype PCB hardware needs adjustments.
+STATUS: Software compiles and runs, August 22, 2025. Prototype PCB hardware needs adjustments.
 
 ##  Contents
 
@@ -28,9 +28,9 @@ Examples in this crate are intended for testing the hardware and do not (yet) de
 ```
 MONITOR_ID="whatever"  cargo build --no-default-features  --target thumbv7em-none-eabihf --features v020_2025-05   --bin t16-f411   [ --release ]
 ```
-The feature ```v020_2025-05``` indicate prototype hardware version `v0.2.0 2025-05`.
+The feature `v020_2025-05` indicate prototype hardware version `v0.2.0 2025-05`.
 MONITOR_ID is optional. If not supplied "Txxx" will be used. 
-The hal ```stm32f4xx_hal``` is used and set as a dependency in Cargo.toml.
+The hal `stm32f4xx_hal` is used and set as a dependency in Cargo.toml.
 
 ## Loading
 

@@ -1,40 +1,39 @@
-//  based on crate rust-integration-testing  examples/projects/temperature-display_no-rtic.rs
 //! Measure temperature on sixteen temperature sensors (NTC 3950 10k thermistors probes) 
-//! using  4-channel adc's on I2C2 and crate ads1x1x. Display using SSD1306 on I2C1.
+//! using  4-channel adc's on I2C2 and crate ads1x1x. 
+//! Display using SSD1306 on I2C1.
 //! Transmit with LoRa on SPI.
 
-//! Status: Compiles and runs, Nov 21,2024. Prototype PCB hardware needs adjustments.
+//  based on crate rust-integration-testing  examples/projects/temperature-display_no-rtic.rs
+
+//! Status: Compiles and runs, August 22, 2025. 
+//!         Prototype PCB hardware needs adjustments. (I2C1 not properly wired.)
 
 //!  To Do:
 //!    - improve calculation of sensor mv to degree C.
 
 //! https://www.ametherm.com/thermistor/ntc-thermistor-beta
 
+// set this with
+// MONITOR_ID="whatever" cargo build ...
+// MONITOR_ID="whatever"  cargo  run --no-default-features --target thumbv7em-none-eabihf --features v020_2025-05 --bin t16-f411
+// or  cargo:rustc-env=MONITOR_ID="whatever"
+//const MONITOR_IDU : &[u8] = option_env!("MONITOR_ID").expect("Txxx").as_bytes();
+
+///////////////////// 
 
 #![deny(unsafe_code)]
 #![no_std]
 #![no_main]
 #![feature(type_alias_impl_trait)]
 
-
-///////////////////// 
-
-// set this with
-// MONITOR_ID="whatever" cargo build ...
-// or  cargo:rustc-env=MONITOR_ID="whatever"
-//const MONITOR_IDU : &[u8] = option_env!("MONITOR_ID").expect("Txxx").as_bytes();
 const MONITOR_ID: &str = option_env!("MONITOR_ID").expect("Txxx");
 const MONITOR_IDU : &[u8] = MONITOR_ID.as_bytes();
 
-//const MONITOR_ID:  [u8;3] = *b"T02";  //dereferenced byte string literal   // module id to indicate source of transmition
-
-
 const MODULE_CODE:  &str = "t16-f411"; 
-const READ_INTERVAL:  u32 = 600;  // used as seconds  but 
-const BLINK_DURATION: u32 = 1;  // used as seconds  but  ms would be better
+const READ_INTERVAL:  u32 = 600;  // used as seconds 
+const BLINK_DURATION: u32 = 1;    // used as seconds  but  ms would be better
 const S_FMT:       usize  = 12;
 const MESSAGE_LEN: usize  = 16 * S_FMT;  
-
 
 //////////////////// 
 
@@ -53,18 +52,18 @@ use core::fmt::Write;
 
 use stm32f4xx_hal::{
     pac::{Peripherals, I2C1, SPI1, TIM5},
-    timer::{Delay as halDelay},
     rcc::{RccExt},
     spi::{Spi},
-    i2c::I2c,   //this is a type
+    i2c::I2c,   //this is a type vs  embedded_hal::i2c::I2c trait
     gpio::{Output, PushPull, GpioExt, Input},
-    prelude::*,
-    block,
-    timer::{TimerExt},
     gpio::{Pin}, 
     gpio::{gpioa::{PA1, PA4, }},
     gpio::{gpiob::{PB4, PB5, }},  
     gpio::{gpioc::{PC13}},
+    prelude::*,
+    block,
+    timer::{Delay as halDelay},
+    timer::{TimerExt},
 };
 
 use embedded_hal::{spi::{Mode, Phase, Polarity},
@@ -73,12 +72,12 @@ use embedded_hal::{spi::{Mode, Phase, Polarity},
 };
 
 
+//////////////////////  ssd display  
 
-/////////////////////   ssd
 // See https://docs.rs/embedded-graphics/0.7.1/embedded_graphics/mono_font/index.html re fonts
 
 use embedded_graphics::{
-    mono_font::{iso_8859_1::FONT_8X13 as FONT, MonoTextStyleBuilder}, 
+    mono_font::{iso_8859_1::FONT_8X13 as FONT, MonoTextStyleBuilder}, // need iso for degree symbol
     pixelcolor::BinaryColor,
     prelude::*,
     text::{Baseline, Text},
@@ -88,7 +87,6 @@ use embedded_graphics::{
 type  DisplaySizeType = ssd1306::prelude::DisplaySize128x64;
 const DISPLAYSIZE: DisplaySizeType = DisplaySize128x64;
 type  DisplayType = Ssd1306<I2CInterface<I2c<I2C1>>, DisplaySizeType, BufferedGraphicsMode<DisplaySizeType>>;
-
 
 use ssd1306::{mode::BufferedGraphicsMode, prelude::*, I2CDisplayInterface, Ssd1306};
 
@@ -164,7 +162,8 @@ const  SCALE: i64 = 8 ;  // = 32767 / 4096
     //   but would be up to 5v when measuring usb power.
     // +- 6.144v , 4.096v, 2.048v, 1.024v, 0.512v, 0.256v
 
-//   //////////////////////////////////////////////////////////////////
+
+/////////////////////////// functions ////////////////////////////////////////
 
     fn show_display(
         t: [i64; 16],
@@ -333,8 +332,7 @@ fn main() -> ! {
     let mut delay = dp.TIM5.delay(&mut rcc);
 
     led.off();
-    delay.delay_ms(2000); // treated as ms
-    
+    delay.delay_ms(2000); // treated as ms   
     led.on();
     delay.delay_ms(BLINK_DURATION); // treated as ms
     led.off();
