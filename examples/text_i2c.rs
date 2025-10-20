@@ -5,6 +5,8 @@
 //! Wiring pin connections for scl and sda to display as in the setup sections below.
 //! Tested on generic (cheap) ssd1306 OLED 0.91" 128x32 and 0.96" 128x64 displays.
 //! Note that the DisplaySize setting needs to be adjusted for 128x64 or 128x32 display
+//! 
+//! This example also does hprintln, so requires semihosting and will no work with power only.
 
 #![no_std]
 #![no_main]
@@ -31,7 +33,7 @@ use stm32f4xx_hal::{
     prelude::*,
 };
 
-#[cfg(feature = "v020_2025-05")]
+#[cfg(feature = "stm32f411")]
 fn setup() -> I2c<I2C1> {
     let dp = Peripherals::take().unwrap();
     let mut rcc = dp.RCC.constrain();

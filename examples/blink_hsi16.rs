@@ -1,5 +1,7 @@
-//! Blink  onboard LED on PC13. Using default sysclock.
-//! Compare crate rust-integration-testing  examples/misc/blink_impl.
+//! Blink  onboard LED on PC13. Using  sysclock delay and hsi set to 16MHz.
+//! This should be the same as blink_default.
+//! From the datasheet DS10314 Rev 8, p20 
+//! "The 16 MHz internal RC oscillator is factory-trimmed to offer 1% accuracy at 25C."
 
 #![deny(unsafe_code)]
 #![no_std]
@@ -37,7 +39,7 @@ pub trait LED: OutputPin {
 
 
 use stm32f4xx_hal::{
-    gpio::{gpioc::PC13, Output, PushPull},
+    gpio::{gpioc::PC13, gpioa::PA8, Output, PushPull},
     pac::{CorePeripherals, Peripherals},
     rcc::Config,
     prelude::*,
@@ -45,7 +47,7 @@ use stm32f4xx_hal::{
 
 impl LED for PC13<Output<PushPull>>{}
 
-#[cfg(feature = "v020_2025-05")]
+#[cfg(feature = "stm32f411")]
 fn setup() -> (impl LED, impl DelayNs) {
     let cp = CorePeripherals::take().unwrap();
     let dp = Peripherals::take().unwrap();
@@ -54,7 +56,32 @@ fn setup() -> (impl LED, impl DelayNs) {
     let gpioc = dp.GPIOC.split(&mut rcc);
     let delay = cp.SYST.delay(&mut rcc.clocks);
 
-    rcc.freeze(Config::default());
+    //let () = rcc.clocks.sysclk();
+    assert_eq!(rcc.clocks.sysclk(),  16.MHz::<1, 1>());
+    //assert_eq!(rcc.clocks.sysclk(),  25.MHz::<1, 1>()); // builds but panics running
+    assert_eq!(rcc.clocks.hclk(),    16.MHz::<1, 1>());
+    //assert_eq!(rcc.clocks.pclk1(),   16.MHz::<1, 1>());
+    //assert_eq!(rcc.clocks.pclk2(),   16.MHz::<1, 1>());
+    //assert_eq!(rcc.clocks.hsi,    16.MHz::<1, 1>());   // .hsi unknown field  .hsi()  method not found in `Clocks`
+    //assert_eq!(rcc.clocks.hse,    16.MHz::<1, 1>());   // .hse unknown field  .hse()  method not found in `Clocks`
+
+    //rcc.freeze(Config::hsi());   // default should be 16.MHz()
+    let clocks = Config::hsi();  
+    rcc.freeze(clocks);   
+
+//    // output MCO
+//    let gpioa = dp.GPIOA.split(&mut rcc);
+//    rcc.cfgr().mco1(Mco1Clock::HSI);      // Set MCO1 to HSI,  options HSI, HSE, PLL
+//    let mco = gpioa.pa8.into_alternate(); // Set PA8 as alternate function    
+//    rcc.mco1.set_mco1(mco);               // Enable clock output on mco pin PA8
+
+    //rcc.freeze(
+    //    Config::hsi()
+    //       .hclk(48.MHz())
+    //        .sysclk(48.MHz())
+    //        .pclk1(24.MHz())
+    //        .pclk2(24.MHz()),
+    //);
 
     // return tuple  (led, delay)
     (

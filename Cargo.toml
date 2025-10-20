@@ -1,11 +1,11 @@
 [package]
 authors = ["Paul Gilbert"]
 categories = ["embedded", "no-std"]
-description = "module with 16 NTC temperature, and MCU stm32f401"
+description = "module with 16 NTC temperature sensors, and MCU stm32f411"
 keywords = ["stm32f411", "i2c", "spi", "adc", "lora"]
 license = "MIT OR Apache-2.0"
 name = "t16-f411"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 
 [dependencies]
@@ -15,6 +15,8 @@ cortex-m-semihosting   = ">=0.5.0"
 #stm32f4xx-hal =  { version = "0.20.0" } ok
 #stm32f4xx-hal =  { version = "0.21.0" } ok
 #stm32f4xx-hal =  { version = "0.22.1" }  
+#stm32f4xx-hal =  { version = "0.23.0" } 
+# Use a release version. Next is just for occcassional experiments.
 stm32f4xx-hal = { git = "https://github.com/stm32-rs/stm32f4xx-hal", optional = true }
 
 
@@ -41,5 +43,5 @@ ads1x1x         = { git = "https://github.com/eldruin/ads1x1x-rs" }
 #ads1x1x         = { version = "0.2.2" }  # trait bound problems
 
 [features]
-#stm32f411 = ["stm32f4xx-hal/stm32f411"  ] 
+stm32f411 = ["stm32f4xx-hal/stm32f411"  ] # this is passed to dependencies.
 v020_2025-05 = ["stm32f4xx-hal/stm32f411"  ] 

@@ -1,5 +1,8 @@
-//! Blink  onboard LED on PC13. Using high speed internal (hsi) oscillator.   TIMING TOO QUICK
-//! Compare crate rust-integration-testing  examples/misc/blink_impl.
+//! Blink  onboard LED on PC13. Using default sysclock delay.
+//! From the datasheet DS10314 Rev 8, p20 
+//! "The 16 MHz internal RC oscillator is factory-trimmed to offer 1% accuracy at 25C."
+//! 
+//! Compare blink_hsi_16 and crate rust-integration-testing  examples/misc/blink_impl.
 
 #![deny(unsafe_code)]
 #![no_std]
@@ -45,7 +48,7 @@ use stm32f4xx_hal::{
 
 impl LED for PC13<Output<PushPull>>{}
 
-#[cfg(feature = "v020_2025-05")]
+#[cfg(feature = "stm32f411")]
 fn setup() -> (impl LED, impl DelayNs) {
     let cp = CorePeripherals::take().unwrap();
     let dp = Peripherals::take().unwrap();
@@ -54,13 +57,9 @@ fn setup() -> (impl LED, impl DelayNs) {
     let gpioc = dp.GPIOC.split(&mut rcc);
     let delay = cp.SYST.delay(&mut rcc.clocks);
 
-    rcc.freeze(
-        Config::hsi()
-           .hclk(48.MHz())
-            .sysclk(48.MHz())
-            .pclk1(24.MHz())
-            .pclk2(24.MHz()),
-    );
+    assert_eq!(rcc.clocks.sysclk(), 16.MHz::<1, 1>());
+
+    rcc.freeze(Config::default());
 
     // return tuple  (led, delay)
     (

@@ -1,4 +1,4 @@
-//! Blink  onboard LED on PC13.  Using high speed external (hse) oscillator.   TIMING TOO QUICK
+//! Blink  onboard LED on PC13.  Using high speed external (hse) oscillator.
 //! Compare crate rust-integration-testing  examples/misc/blink_impl.
 
 #![deny(unsafe_code)]
@@ -12,6 +12,7 @@ use panic_semihosting as _;
 use panic_halt as _;
 
 use cortex_m_rt::entry;
+//use cortex_m_semihosting::hprintln;
 
 use embedded_hal::delay::DelayNs;
 use embedded_hal::digital::OutputPin;
@@ -38,32 +39,50 @@ pub trait LED: OutputPin {
 
 use stm32f4xx_hal::{
     gpio::{gpioc::PC13, Output, PushPull},
-    pac::{CorePeripherals, Peripherals},
+    pac::{Peripherals},
     rcc::Config,
     prelude::*,
+    time::Hertz,
 };
 
 impl LED for PC13<Output<PushPull>>{}
 
-#[cfg(feature = "v020_2025-05")]
+#[cfg(feature = "stm32f411")]
 fn setup() -> (impl LED, impl DelayNs) {
-    let cp = CorePeripherals::take().unwrap();
     let dp = Peripherals::take().unwrap();
-    let mut rcc = dp.RCC.constrain();
+
+    //let mut rcc = dp.RCC.constrain();  constrain` is just a `freeze` with default config. (since changes circa Oct 2025) 
+
+    // Config creates a structure for passing to freeze, but does not itself set the clocks. 
+    //let config = Config::hse(25.MHz());
+    // or
+    let config = Config::hse(25.MHz()).hclk(100.MHz()).sysclk(100.MHz()).pclk1(50.MHz()).pclk2(50.MHz());
+    // `pclk1` can't be bigger than `sysclk`
+
+    // RCC configuration is done here. Freeze before using `rcc`. 
+    let mut rcc = dp.RCC.freeze(config);
+
+    //hprintln!("clocks() {:?}", rcc.clocks);
+
+    // `Clocks` structure lives inside `Rcc`. Clone is possible: `rcc.clocks.clone()`
+    //assert_eq!(rcc.clocks.hse(),     Hertz::MHz(25));
+    assert_eq!(rcc.clocks.sysclk(),  Hertz::MHz(100)); 
+    assert_eq!(rcc.clocks.hclk(),    Hertz::MHz(100));
+    assert_eq!(rcc.clocks.pclk1(),   Hertz::MHz(50));
+    assert_eq!(rcc.clocks.pclk2(),   Hertz::MHz(50));
+
+    // Delay constructor requires Rcc to be already configured. 
+    //let delay = dp.TIM2.delay_us(&mut rcc);              //Tick at 1Mhz
+    //let delay = dp.TIM2.delay::<25000000>(&mut rcc);     //Tick at 25Mhz
+    //let delay = dp.TIM2.delay::<50000000>(&mut rcc);     //Tick at 50Mhz
+    let mut delay = dp.TIM2.delay::<100000000>(&mut rcc);     //Tick at 100Mhz
+    // panic let delay = dp.TIM2.delay_ms(&mut rcc);       //Tick at 1Khz
 
     let gpioc = dp.GPIOC.split(&mut rcc);
-    let delay = cp.SYST.delay(&mut rcc.clocks);
-
-    //rcc.cfgr.use_hse(25.MHz()).freeze();
-    rcc.freeze(Config::hse(25.MHz()));
-
-   // rcc.freeze(
-   //     Config::hsi()
-   //        .hclk(48.MHz())
-   //         .sysclk(48.MHz())
-   //         .pclk1(24.MHz())
-   //         .pclk2(24.MHz()),
-   // );
+    
+    // these both work here
+    delay.delay(20.millis());
+    delay.delay_ms(20);
 
     // return tuple  (led, delay)
     (
@@ -78,17 +97,19 @@ fn setup() -> (impl LED, impl DelayNs) {
 fn main() -> ! {
     let (mut led, mut delay) = setup();
 
-    led.blink(1000, &mut delay); // blink  to indicate setup complete.
+    led.blink(1000, &mut delay); // blink 1s to indicate setup complete.
 
     led.off();    
-    delay.delay_ms(5000);  //off for  5 s
+    delay.delay_ms(2000);  //off for  2s
+    //delay.delay(2000.millis());  //off for 2s  trait not recognized
 
     led.on();     
     delay.delay_ms(20000);   // on for 20s to check delay timer
 
     led.off();    
-    delay.delay_ms(5000);  //off for  5 s
+    delay.delay_ms(3000);  //off for  3s
 
+    // blink once per second
     let on: u32  = 10; // on for 10 ms
     let off: u32 = 990; //off for remainder of second
 

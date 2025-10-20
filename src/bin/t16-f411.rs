@@ -299,9 +299,9 @@ fn main() -> ! {
     let gpiob = dp.GPIOB.split(&mut rcc);
     let gpioc = dp.GPIOC.split(&mut rcc);
 
-    //v020_2025-05 has wiring error:  (scl, sda) on (pb8, pb6) UFQFPN48 pins (45, 42)
-    let scl = gpiob.pb8.into_alternate_open_drain(); 
-    let sda = gpiob.pb9.into_alternate_open_drain(); // not pb6, should be pb7 or pb9 on pins 43 or 46
+    //v020_2025-05 had wiring error:  (scl, x) on (pb8, pb6) = UFQFPN48 pins (45, 42)
+    let scl = gpiob.pb8.into_alternate_open_drain(); // use pb8 on UFQFPN48 pin 45
+    let sda = gpiob.pb9.into_alternate_open_drain(); // use pb9 on UFQFPN48 pin 46
     let i2c1 = I2c::new(dp.I2C1, (scl, sda), 400.kHz(), &mut rcc);
 
     let scl = gpiob.pb10.into_alternate_open_drain();
@@ -356,7 +356,7 @@ fn main() -> ! {
     let mut disp: Option<DisplayType> = match z.init() {
         Ok(_d)  => {Some(z)
                    },
-        Err(e)  => {hprintln!("display set None. {:?}", e);
+        Err(_e)  => {//hprintln!("display set None. {:?}", e);
                     None
                    }
     };

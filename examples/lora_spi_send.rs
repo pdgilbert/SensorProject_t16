@@ -130,7 +130,7 @@ const MODE: Mode = Mode {
 };
 
 
-#[cfg(feature = "v020_2025-05")]
+#[cfg(feature = "stm32f411")]
 fn setup() -> (impl LED, SpiType, SpiExt, impl DelayNs) {
     let dp = Peripherals::take().unwrap();
     let mut rcc = dp.RCC.constrain();
@@ -251,6 +251,9 @@ fn main() -> ! {
                        }
         };
         //hprintln!("check_transmit done").unwrap();
+        led.on();     
+        lora.delay_ms(1);   // on for 1s
+        led.off();    
 
         //lora.delay_ms(5000);
         lora.delay_ms(5);

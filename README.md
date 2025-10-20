@@ -26,9 +26,11 @@ Examples in this crate are intended for testing the hardware and do not (yet) de
 ## Building
 
 ```
-MONITOR_ID="whatever"  cargo build --no-default-features  --target thumbv7em-none-eabihf --features v020_2025-05   --bin t16-f411   [ --release ]
+MONITOR_ID="whatever"  cargo build --no-default-features  --target thumbv7em-none-eabihf  --features stm32f411 --bin t16-f411   [ --release ]
 ```
-The feature `v020_2025-05` indicate prototype hardware version `v0.2.0 2025-05`.
+The ssd is disabled if  `--feature `v020_2025-05` is added. 
+(The prototype hardware version `v0.2.0 2025-05` has a mis-wired I2C1 for the ssd.)
+
 MONITOR_ID is optional. If not supplied "Txxx" will be used. 
 The hal `stm32f4xx_hal` is used and set as a dependency in Cargo.toml.
 
@@ -44,13 +46,16 @@ Adjust interface for your programming dongle.
 
 In another window do
 ```
-MONITOR_ID="whatever"  cargo  run --target thumbv7em-none-eabihf --features v020_2025-05 --bin t16-f411  [ --release]
+MONITOR_ID="whatever"  cargo  run --target thumbv7em-none-eabihf --features stm32f411 --bin t16-f411  [ --release]
 ```
 The `--release` will be needed if code is too big for memory.
 
 ## Testing
+
+Test with examples in `examples/` directory ( blink_default`,`blink_hsi16`,
+ `text_i2c`, `lora_spi_send`, `blink_hse`, ). For example
 ```
-cargo  run --target thumbv7em-none-eabihf --features v020_2025-05 --example blink_impl
+cargo  run --target thumbv7em-none-eabihf --features stm32f411  --example blink_default
 ```
 
 
