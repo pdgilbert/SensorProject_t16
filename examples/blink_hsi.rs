@@ -1,5 +1,5 @@
-//! Blink  onboard LED on PC13. Using  sysclock delay and hsi set to 16MHz.
-//! This should be the same as blink_default.
+//! Blink  onboard LED on PC13. Using  TIM2 delay and hsi, which is 16MHz.
+//! The clock here should be the same as blink_default, but hsi is explicity set here.
 //! From the datasheet DS10314 Rev 8, p20 
 //! "The 16 MHz internal RC oscillator is factory-trimmed to offer 1% accuracy at 25C."
 
@@ -39,49 +39,44 @@ pub trait LED: OutputPin {
 
 
 use stm32f4xx_hal::{
-    gpio::{gpioc::PC13, gpioa::PA8, Output, PushPull},
-    pac::{CorePeripherals, Peripherals},
+    gpio::{gpioc::PC13, Output, PushPull},
+    pac::{Peripherals},
     rcc::Config,
     prelude::*,
+    time::Hertz,
 };
 
 impl LED for PC13<Output<PushPull>>{}
 
 #[cfg(feature = "stm32f411")]
 fn setup() -> (impl LED, impl DelayNs) {
-    let cp = CorePeripherals::take().unwrap();
     let dp = Peripherals::take().unwrap();
-    let mut rcc = dp.RCC.constrain();
+
+    // Config creates a structure for passing to freeze, but does not itself set the clocks. 
+    let config = Config::hsi().pclk1(8.MHz());  // hsi() is 16.MHz()
+
+    // RCC configuration is done here. Freeze before using `rcc`. 
+    let mut rcc = dp.RCC.freeze(config);
 
     let gpioc = dp.GPIOC.split(&mut rcc);
-    let delay = cp.SYST.delay(&mut rcc.clocks);
 
-    //let () = rcc.clocks.sysclk();
-    assert_eq!(rcc.clocks.sysclk(),  16.MHz::<1, 1>());
-    //assert_eq!(rcc.clocks.sysclk(),  25.MHz::<1, 1>()); // builds but panics running
-    assert_eq!(rcc.clocks.hclk(),    16.MHz::<1, 1>());
-    //assert_eq!(rcc.clocks.pclk1(),   16.MHz::<1, 1>());
-    //assert_eq!(rcc.clocks.pclk2(),   16.MHz::<1, 1>());
-    //assert_eq!(rcc.clocks.hsi,    16.MHz::<1, 1>());   // .hsi unknown field  .hsi()  method not found in `Clocks`
-    //assert_eq!(rcc.clocks.hse,    16.MHz::<1, 1>());   // .hse unknown field  .hse()  method not found in `Clocks`
+    assert_eq!(rcc.clocks.sysclk(),  Hertz::MHz(16));
+    assert_eq!(rcc.clocks.hclk(),    Hertz::MHz(16));
+    assert_eq!(rcc.clocks.pclk1(),   Hertz::MHz(8));
+    assert_eq!(rcc.clocks.pclk2(),   Hertz::MHz(16));
+    //assert_eq!(rcc.clocks.hsi,     Hertz::MHz(16)); // no query method for hsi
 
-    //rcc.freeze(Config::hsi());   // default should be 16.MHz()
-    let clocks = Config::hsi();  
-    rcc.freeze(clocks);   
+    let mut delay = dp.TIM2.delay::<16000000>(&mut rcc);       //Tick at 32Mhz
 
-//    // output MCO
+    delay.delay(20.millis());
+    delay.delay_ms(20);
+
+    // output MCO
+//    This does not yet seem to be implemented in stm32f4xx_hal, but see stm32g4xx_hal
 //    let gpioa = dp.GPIOA.split(&mut rcc);
 //    rcc.cfgr().mco1(Mco1Clock::HSI);      // Set MCO1 to HSI,  options HSI, HSE, PLL
 //    let mco = gpioa.pa8.into_alternate(); // Set PA8 as alternate function    
 //    rcc.mco1.set_mco1(mco);               // Enable clock output on mco pin PA8
-
-    //rcc.freeze(
-    //    Config::hsi()
-    //       .hclk(48.MHz())
-    //        .sysclk(48.MHz())
-    //        .pclk1(24.MHz())
-    //        .pclk2(24.MHz()),
-    //);
 
     // return tuple  (led, delay)
     (

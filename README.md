@@ -52,12 +52,16 @@ The `--release` will be needed if code is too big for memory.
 
 ## Testing
 
-Test with examples in `examples/` directory ( blink_default`,`blink_hsi16`,
- `text_i2c`, `lora_spi_send`, `blink_hse`, ). For example
+Test with examples in `examples/` directory ( blink_default`,`blink_hsi`, `blink_hse`,
+ `text_i2c`, `lora_spi_send` ). For example
 ```
 cargo  run --target thumbv7em-none-eabihf --features stm32f411  --example blink_default
 ```
-
+Some of the tests are to check subsets of the functionality needed for the 
+main program src/bin/t16-f411.rs. Other test are to check pcb functionality
+that is not yet used in the main program. Many of these tests will also run
+on a `blackpill` with an `stm32f411` MCU. See comments in the test files for
+addition information.
 
 ## License
 
